@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="倫敦謎案簿">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="在倫敦解開各種懸案、追蹤神秘怪獸的偵探解謎遊戲。">
+    <title>倫敦謎案簿：名偵探事件錄</title>
+    <link rel="manifest" href="manifest.webmanifest?v=20260501-gameflow2">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/pwa/icon-192.png?v=20260501-gameflow2">
+    <link rel="apple-touch-icon" href="assets/pwa/apple-touch-icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=20260501-gameflow2">
+</head>
+<body>
+    <div id="particles-container"></div>
+    <div class="global-vignette"></div>
+    <div class="light-mask-breathing"></div>
+    <div class="environment-fog"></div>
+    <div id="boot-overlay" class="boot-overlay active">
+        <div class="boot-layer boot-loader" id="boot-loader">
+            <div class="boot-rune"></div>
+            <div class="boot-title-mini">LONDON MYSTERIES</div>
+            <div class="boot-status" id="boot-status">正在調閱案件檔案...</div>
+        </div>
+    </div>
+
+    <div id="app-container">
+
+        <!-- 開場角色問好 -->
+        <div id="greeting-overlay" class="greeting-overlay">
+            <div class="greeting-card">
+                <div class="greeting-portrait">
+                    <img id="greeting-image" src="assets/char_alchemist.png" alt="角色">
+                </div>
+                <div class="greeting-name" id="greeting-name">夏洛特</div>
+                <p class="greeting-text" id="greeting-text">歡迎回來！</p>
+                <div class="greeting-tap">點擊繼續 ▼</div>
+            </div>
+        </div>
+        
+        <!-- 自動存檔提示 (Toast) -->
+        <div id="save-toast" class="hidden">
+            <img class="toast-icon" src="assets/icons/ui_save.png" alt="存檔">
+            <span>紀錄已同步</span>
+        </div>
+
+        <!-- 主線案件考核 UI -->
+        <div id="quest-widget" class="hidden">
+            <div class="quest-icon"><img src="assets/icons/ui_casefile.png" alt="案件檔案"></div>
+            <div class="quest-info">
+                <div class="quest-title">偵探考核</div>
+                <div class="quest-desc" id="quest-desc">破解一次案件</div>
+            </div>
+            <div class="quest-claim" id="btn-quest-claim">領取</div>
+        </div>
+
+        <!-- 劇情對話系統 (Dialogue Overlay) -->
+        <div id="dialogue-overlay">
+            <div class="dialogue-character">
+                <img id="dialogue-character-image" class="portrait-iris" src="assets/char_alchemist.png" alt="Charlotte">
+            </div>
+            <div class="dialogue-box">
+                <h3 class="dialogue-name" id="dialogue-name">夏洛特</h3>
+                <p class="dialogue-text" id="dialogue-text">...</p>
+                <div class="dialogue-continue">點擊繼續 <span>▼</span></div>
+            </div>
+        </div>
+
+        <!-- 通用頂部列 -->
+        <div id="global-header" class="hidden">
+            <button id="btn-global-back" class="icon-btn">◀ 回到事務所</button>
+            <div class="header-title" id="header-title">偵探事務所</div>
+                <div class="stats-combo">
+                <div class="stamina-display"><img class="status-icon" src="assets/icons/potion_red.png" alt="E"><span id="global-stamina">100</span></div>
+                <div class="coin-display">
+                    <img src="assets/icons/coin.png" alt="Coin">
+                    <span id="global-coins">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VIEW: 首頁 (HUB) ================= -->
+        <section id="view-hub" class="view-section active-view">
+            <!-- 環境氛圍效果 -->
+            <div class="ambient-effects">
+                <div class="dust-motes"></div>
+                <div class="lamp-flicker"></div>
+            </div>
+            <div class="hub-content hub-hero-layout">
+                <button id="btn-hub-home" class="hub-home-return hidden">回到首頁</button>
+                <div class="home-shell hub-top-card">
+                    <div class="home-brand">
+                        <span class="home-kicker">LONDON MYSTERIES</span>
+                        <h1>倫敦謎案簿</h1>
+                    </div>
+
+                    <div id="auth-card" class="home-auth-card">
+                        <button id="btn-guest-start" class="btn btn-primary home-start-btn" aria-label="開始遊戲">
+                            <img src="assets/icons/ui_start.png" alt="開始調查">
+                            <span>開始調查</span>
+                        </button>
+                        <p id="home-save-note" class="home-save-note">未登入時將記錄保存在這台裝置；登入 Google 後會自動同步到雲端。</p>
+                        <div id="auth-guest">
+                            <button id="btn-login-google" class="btn-google-small" aria-label="Google 登入">
+                                <span class="google-mark">G</span>
+                                <span>以 Google 帳號遊玩</span>
+                            </button>
+                        </div>
+
+                        <div id="auth-user" class="hidden">
+                            <div class="auth-user-row auth-user-chip">
+                                <img id="auth-avatar" class="auth-avatar" src="assets/icons/potion_blue.png" alt="avatar">
+                                <div class="auth-user-meta">
+                                    <strong id="auth-name">已登入玩家</strong>
+                                    <span id="auth-email"></span>
+                                </div>
+                            </div>
+                            <button id="btn-logout" class="btn-text-only">登出</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hub-hero-container">
+                    <div class="hero-bubble" id="hero-bubble">
+                        <span class="bubble-kicker">目前的目標</span>
+                        <p id="hub-task-text">新的案件正在等待調查。</p>
+                        <small id="hero-guide-meta" class="hero-guide-meta">案件進入選關，每日消耗 5 精力，怪獸追跡消耗 30 精力。</small>
+                    </div>
+                    <div class="hero-portrait-wrap" id="btn-hero-interact">
+                        <img id="hub-hero-image" src="assets/char_alchemist.png" alt="夏洛特" class="hero-img">
+                    </div>
+                </div>
+
+                <div class="hub-panel-stack">
+                    <section class="hub-panel hub-home-panel active" data-panel="home">
+                        <div class="hub-panel-head">
+                            <div>
+                                <span class="hub-panel-kicker">首頁</span>
+                                <h2 id="story-next-title">主線案件</h2>
+                                <p id="story-next-desc">夏洛特正在整理下一份案件紀錄。</p>
+                            </div>
+                            <span class="hub-panel-badge" id="story-progress-badge">主線進行中</span>
+                        </div>
+                        
+                        <!-- 倫敦日報動態新聞 -->
+                        <div class="hub-news-ticker" id="hub-news-ticker">
+                            <span class="news-label">倫敦日報</span>
+                            <div class="news-content">
+                                <p id="hub-news-text">倫敦的迷霧中隱藏著無數祕密...</p>
+                            </div>
+                        </div>
+
+                        <div class="home-story-summary">
+                            <span class="feed-kicker">主線故事</span>
+                            <h3 id="story-progress-text">偵探事件紀錄</h3>
+                            <p id="home-story-copy">事務所的檔案已經整理完成，下一份案件正在等待你確認。</p>
+                        </div>
+                    </section>
+
+                    <section class="hub-panel" data-panel="missions">
+                        <div class="hub-panel-head">
+                            <div>
+                                <span class="hub-panel-kicker">故事卷宗</span>
+                                <h2>事務所委託桌</h2>
+                                <p>新的案件會先送到桌上。只有已解鎖的卷宗會被打開，其餘仍會維持封存，讓主線更像一段正在展開的故事。</p>
+                            </div>
+                        </div>
+                        <div class="case-tabs">
+                            <button class="case-tab-btn active" data-tab="current">當前案件</button>
+                            <button class="case-tab-btn" data-tab="history">歷史紀錄</button>
+                        </div>
+                        <div class="level-grid" id="level-grid">
+                            <!-- 動態產生關卡按鈕 -->
+                        </div>
+                    </section>
+
+                    <section class="hub-panel" data-panel="daily">
+                        <div class="hub-panel-head">
+                            <div>
+                                <span class="hub-panel-kicker">每日與怪獸追跡</span>
+                                <h2 id="daily-title">今日推理挑戰</h2>
+                                <p id="daily-desc">每日密碼正在重新生成中。</p>
+                            </div>
+                            <span class="hub-panel-badge">不限次數</span>
+                        </div>
+
+                        <button id="btn-daily-start" class="hub-large-action daily-action">
+                            <div class="action-info">
+                                <span>啟動每日推理</span>
+                                <small id="daily-status-text">每次消耗 5 精力，破案獲得 10 英鎊</small>
+                            </div>
+                            <img src="assets/icons/nav_daily.png" alt="每日">
+                        </button>
+
+                        <div class="daily-meta">
+                            <span id="daily-rule-label">難度待定</span>
+                            <strong id="daily-reward-status">每次破案 10 英鎊</strong>
+                        </div>
+
+                        <div class="weekly-card">
+                            <div class="weekly-head">
+                                <div>
+                                    <span class="hub-panel-kicker">每週簽到</span>
+                                    <h3>七日打卡日曆</h3>
+                                </div>
+                                <span class="hub-panel-badge" id="weekly-progress-text">0 / 7</span>
+                            </div>
+                            <div class="weekly-calendar" id="weekly-calendar"></div>
+                            <p class="weekly-reward-text" id="weekly-reward-text">完成 7 天每日推理打卡，可額外獲得 500 英鎊。</p>
+                        </div>
+
+                        <button id="btn-endless-start" class="hub-large-action endless-action">
+                            <div class="action-info">
+                                <span>啟動怪獸追跡</span>
+                                <small>每場消耗 30 精力，用密碼解謎追蹤奇幻怪獸並累積得分。</small>
+                            </div>
+                            <img src="assets/icons/ui_monster_codex.png" alt="怪獸追跡">
+                        </button>
+                    </section>
+
+                    <section class="hub-panel" data-panel="inventory">
+                        <div class="hub-panel-head">
+                            <div>
+                                <span class="hub-panel-kicker">人物與盟約怪獸</span>
+                                <h2>人物與使魔</h2>
+                                <p>配置偵探、稱號與收服怪獸。已收服的怪獸可花費英鎊強化，並提供推理與追跡加成。</p>
+                            </div>
+                        </div>
+                        <div class="inv-tabs">
+                            <button class="inv-tab-btn active" data-inv-tab="character">人物</button>
+                            <button class="inv-tab-btn" data-inv-tab="titles">稱號管理</button>
+                            <button class="inv-tab-btn" data-inv-tab="monsters">怪獸圖鑑</button>
+                        </div>
+                        <div class="inventory-grid" id="inventory-grid"></div>
+                    </section>
+
+                    <section class="hub-panel" data-panel="settings">
+                        <div class="hub-panel-head">
+                            <div>
+                                <span class="hub-panel-kicker">事務所管理</span>
+                                <h2>設定</h2>
+                                <p>音效、安裝版與系統狀態。</p>
+                            </div>
+                        </div>
+                        <div class="settings-stack">
+                            <button id="btn-toggle-audio" class="menu-btn shop-btn settings-btn" title="切換音效">
+                                <img class="btn-icon" src="assets/icons/ui_audio.png" alt="音效">
+                                <span class="btn-label">背景音效</span>
+                            </button>
+                            <div class="feed-card" id="settings-auth-card">
+                                <span class="feed-kicker">系統狀態</span>
+                                <h3>裝置與雲端</h3>
+                                <p>Google 登入與雲端存檔可跨裝置延續進度，安裝到主畫面後體驗會更接近手機遊戲。</p>
+                                <button id="btn-settings-login-google" class="btn btn-secondary" style="margin-top: 10px;">
+                                    <span style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                                        <svg style="width:18px;height:18px;" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                                        登入 Google 帳號
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="feed-card">
+                                <span class="feed-kicker">存檔同步</span>
+                                <h3 id="settings-cloud-title">本機存檔模式</h3>
+                                <p id="settings-cloud-copy">未登入時會保存在此裝置；登入 Google 後，任何英鎊、精力與進度變動都會自動上傳。</p>
+                                <span id="cloud-save-status-detail" class="cloud-save-status">未登入時僅保存在此裝置。</span>
+                                <div class="auth-action-row">
+                                    <button id="btn-cloud-sync" class="hub-tip-btn secondary hidden">手動上傳資料</button>
+                                </div>
+                            </div>
+                            <div id="install-card" class="hub-tip hidden">
+                                <span id="install-status">可安裝成桌面版，開啟更像原生 App。</span>
+                                <button id="btn-install-game" class="hub-tip-btn hidden">安裝遊戲</button>
+                                <span id="install-ios-tip" class="install-note hidden">iPhone 請用 Safari 點分享，再選「加入主畫面」。</span>
+                            </div>
+                            <button id="btn-delete-data" class="menu-btn settings-btn btn-danger" title="刪除所有資料" style="margin-top: 20px;">
+                                <img class="btn-icon" src="assets/icons/ui_delete.png" alt="重置資料">
+                                <span class="btn-label">刪除資料並重新開始</span>
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="hub-panel" data-panel="shop">
+                        <div class="shop-container">
+                            <div class="shop-npc">
+                                <img src="assets/char_broker.png" alt="Shopkeeper" class="npc-avatar broker-avatar">
+                                <div class="npc-dialogue">補給櫃、卷宗工具與怪獸契約強化都在這裡。先穩住精力與推理設備，再談追獵更深的倫敦異象。</div>
+                            </div>
+                            <div class="shop-items" id="shop-items">
+                                <!-- 動態產生商品 -->
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="hub-utility-row">
+                    <div id="hub-stamina-tip" class="hub-tip hidden">
+                        <span id="hub-tip-text">開始案件需要精力。</span>
+                        <button id="btn-hub-tip-shop" class="hub-tip-btn">前往商店補給</button>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="hub-bottom-nav styled-nav" id="hub-bottom-nav">
+                <button class="hub-nav-btn" data-hub-target="shop">
+                    <img src="assets/icons/nav_shop.png" alt="商店">
+                    <span>商店</span>
+                </button>
+                <button class="hub-nav-btn" data-hub-target="inventory">
+                    <img src="assets/icons/nav_inventory.png" alt="人物">
+                    <span>人物</span>
+                </button>
+                <button class="hub-nav-btn main-orb-btn" data-hub-target="missions">
+                    <img src="assets/icons/nav_story.png" alt="案件">
+                    <span>案件</span>
+                </button>
+                <button class="hub-nav-btn" data-hub-target="daily">
+                    <img src="assets/icons/nav_daily.png" alt="每日">
+                    <span>每日</span>
+                </button>
+                <button class="hub-nav-btn" data-hub-target="settings">
+                    <img src="assets/icons/nav_settings.png" alt="設定">
+                    <span>設定</span>
+                </button>
+            </nav>
+        </section>
+
+
+        <!-- ================= VIEW: 遊戲本體 (GAME) ================= -->
+        <section id="view-game" class="view-section">
+            <div class="fog-overlay"></div>
+            <!-- Top Header removed, info moved to combat stage -->
+
+            <div class="combat-stage" id="combat-stage">
+                <div class="combat-hero-panel">
+                    <div class="combat-actor combat-player">
+                        <div class="combat-portrait-frame">
+                            <img id="game-player-image" src="assets/chars/female_stage1.png" alt="玩家角色">
+                        </div>
+                    </div>
+
+                    <div class="combat-actor-meta" id="combat-actor-meta">
+                        <div class="combat-story-info">
+                            <h1 id="game-title">案件 #01</h1>
+                            <p id="game-desc">正在加載案件詳情...</p>
+                        </div>
+                        <div class="combat-legend-wrap">
+                            <div class="feedback-legend" id="feedback-legend">
+                                <div class="legend-item">
+                                    <strong class="legend-chip legend-chip-a">A</strong>
+                                    <span>位置正確</span>
+                                </div>
+                                <div class="legend-item">
+                                    <strong class="legend-chip legend-chip-b">B</strong>
+                                    <span>位置錯誤</span>
+                                </div>
+                            </div>
+                            <!-- 3. 人物推理條 -->
+                            <div class="combat-mana-group" id="combat-mana-container">
+                                <div class="combat-mana-label"><span>推理力</span><strong id="combat-mana-value">100 / 100</strong></div>
+                                <div class="combat-mana-bar"><div id="combat-mana-fill"></div></div>
+                            </div>
+                        </div>
+
+                        <div class="combat-status-box" id="combat-status-box">
+                            <!-- 1. 關卡進度 -->
+                            <div id="combat-progress-info" class="combat-progress-info">
+                                <span id="combat-enemy-count">追跡進度 1/10</span>
+                            </div>
+
+                            <!-- 2. 人物 HP -->
+                            <div class="combat-hp hidden" id="combat-hp">
+                                <div class="combat-hp-label"><span>偵探體力</span><strong id="combat-hp-value">3 / 3</strong></div>
+                                <div class="combat-hp-bar"><div id="combat-hp-fill"></div></div>
+                            </div>
+
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="combat-center hidden">
+                    <!-- Moved to player meta -->
+                </div>
+
+                <div class="combat-actor combat-enemy hidden" id="combat-enemy">
+                    <div class="combat-portrait-frame enemy-frame">
+                        <img id="combat-enemy-image" src="assets/enemies/starry_slime.png" alt="怪獸">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 剩餘時間 (Moved above history) -->
+            <div class="combat-timer hidden" id="combat-timer">
+                <div class="chase-path-container" id="chase-tracker" hidden>
+                    <div class="chase-marker-line"></div>
+                    <img src="assets/icons/ui_detective.png" class="chase-icon chase-detective" id="chase-detective-icon" alt="">
+                    <img src="assets/icons/ui_criminal.png" class="chase-icon chase-criminal" id="chase-criminal-icon" alt="">
+                </div>
+                <div class="combat-timer-bar"><div id="combat-timer-fill"></div></div>
+
+                <div class="combat-timer-label-simple">
+                    <span id="combat-timer-label-text">推理剩餘時間</span>
+                    <strong id="combat-timer-value">20</strong>
+                </div>
+            </div>
+
+            <!-- 歷史紀錄展示區 -->
+            <div id="history-display">
+                <div class="empty-hint">請透過下方數字面板輸入推理密碼。<br><br>【偵探推理守則】<br>每次推理嘗試：消耗推理力<br>精準推理將為您恢復大量推理力。</div>
+            </div>
+
+            <!-- 下方操作控制台 -->
+            <div id="input-console">
+                <div class="cauldron-label">推理密碼欄</div>
+                <div class="slots-container" id="slots-container">
+                    <div class="slot" data-index="0"></div>
+                    <div class="slot" data-index="1"></div>
+                    <div class="slot" data-index="2"></div>
+                    <div class="slot" data-index="3"></div>
+                </div>
+
+                <div class="palette-container" id="palette-container">
+                    <!-- 數字按鈕 1-9 -->
+                </div>
+
+                <div class="action-row" id="action-container">
+                    <button id="btn-hint" class="btn btn-secondary console-btn hint-btn">
+                        <img src="assets/icons/ui_clue.png" class="btn-icon-small" alt="">
+                        <span>查閱線索 (-30)</span>
+                    </button>
+                    <button id="btn-submit" class="btn btn-primary console-btn submit-btn" disabled>
+                        <img src="assets/icons/ui_lock.png" class="btn-icon-small" alt="">
+                        <span>提交推理 (-6)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal (結局/結算) -->
+            <div class="modal-overlay" id="result-modal" aria-hidden="true" inert hidden>
+                <div class="modal-panel result-panel" id="result-panel" data-result="success">
+                    <div class="modal-topline" id="modal-topline">案件評級</div>
+                    <h2 id="modal-title">案件偵破</h2>
+                    <p id="modal-desc">案件來源對這次的調查結果非常滿意。</p>
+                    <div class="modal-story" id="modal-story">本次推理過程已記錄進事務所檔案。</div>
+                    
+                    <div class="stars-display" id="modal-stars">
+                        <!-- 動態插入圖片 -->
+                    </div>
+
+                    <div class="result-stats" id="modal-stats">
+                        <!-- 動態插入戰績摘要 -->
+                    </div>
+
+                    <div class="reward-box">
+                        <img src="assets/icons/coin.png" class="reward-icon">
+                        <span id="modal-coin-reward">+50</span>
+                    </div>
+
+                    <div class="modal-next" id="modal-next">下一件案件已排入待處理清單。</div>
+
+                    <button class="btn btn-primary modal-btn" id="btn-modal-action">確認結案</button>
+                    
+                    <!-- 排行榜區塊 (僅在怪獸追跡模式顯示) -->
+                    <div id="leaderboard-box" class="hidden" style="margin-top: 15px; background: #f0f0f0; padding: 10px; border-radius: 12px; font-weight: 800; font-size: 14px;">
+                        全球最高追跡排名：1994名
+                    </div>
+                </div>
+            </div>
+            <div id="game-message"></div>
+        </section>
+
+        <!-- 稱號選擇視窗 -->
+        <div id="title-modal" class="modal-overlay" aria-hidden="true" inert hidden>
+            <div class="modal-panel" style="max-height: 80vh; overflow-y: auto;">
+                <h2 class="error-title" style="color: var(--color-primary);">稱號管理</h2>
+                <div id="title-modal-desc"></div>
+                <div class="action-container" style="justify-content: center; margin-top: 20px;">
+                    <button id="btn-title-close" class="btn btn-secondary">關閉</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 角色選擇視窗 -->
+        <div id="character-modal" class="modal-overlay" aria-hidden="true" inert hidden>
+            <div class="modal-panel" style="max-height: 80vh; overflow-y: auto;">
+                <h2 class="error-title" style="color: var(--color-primary);">選擇角色</h2>
+                <div id="character-modal-desc"></div>
+                <div class="action-container" style="justify-content: center; margin-top: 20px;">
+                    <button id="btn-character-close" class="btn btn-secondary">關閉</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="monster-modal" class="modal-overlay" aria-hidden="true" inert hidden>
+            <div class="modal-panel monster-detail-panel">
+                <h2 id="monster-modal-title" class="error-title" style="color: var(--color-primary);">怪獸詳情</h2>
+                <div id="monster-modal-desc"></div>
+                <div class="action-container" style="justify-content: center; margin-top: 8px;">
+                    <button id="btn-monster-close" class="btn btn-secondary">關閉</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="monster-drop-modal" class="modal-overlay" aria-hidden="true" inert hidden>
+            <div class="modal-panel monster-drop-panel">
+                <div class="modal-topline">怪獸追跡成果</div>
+                <h2 id="monster-drop-title">未知怪獸</h2>
+                <div class="monster-drop-art">
+                    <img id="monster-drop-image" src="assets/enemies/starry_slime.png" alt="怪獸">
+                </div>
+                <p id="monster-drop-desc">你追跡到新的怪獸線索。</p>
+                <div class="action-container">
+                    <button id="btn-monster-drop-action" class="btn btn-primary">解鎖</button>
+                    <button id="btn-monster-drop-close" class="btn btn-secondary">稍後</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="mission-modal" class="modal-overlay" aria-hidden="true" inert hidden>
+            <div class="modal-panel mission-brief-panel">
+                <div class="modal-topline" id="mission-modal-topline">案件前置</div>
+                <h2 id="mission-modal-title">新案件</h2>
+                <div class="mission-brief-shell">
+                    <div class="mission-brief-portrait">
+                        <img id="mission-modal-image" src="assets/char_alchemist.png" alt="案件角色">
+                    </div>
+                    <div class="mission-brief-copy">
+                        <p id="mission-modal-desc">案件摘要</p>
+                        <div class="mission-brief-meta" id="mission-modal-meta"></div>
+                    </div>
+                </div>
+                <details class="mission-brief-details">
+                    <summary>查看其他章節與案件說明</summary>
+                    <div id="mission-modal-extra" class="mission-brief-extra"></div>
+                </details>
+                <div class="action-container mission-brief-actions">
+                    <button id="btn-mission-back" class="btn btn-secondary">重新選擇章節</button>
+                    <button id="btn-mission-start" class="btn btn-primary">繼續案件</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="story-paper-modal" class="modal-overlay" aria-hidden="true" inert hidden>
+            <div class="modal-panel story-paper-panel">
+                <div class="modal-topline" id="story-paper-topline">案件卷宗</div>
+                <h2 id="story-paper-title">故事前情</h2>
+                <div id="story-paper-body" class="story-paper-body"></div>
+                <div class="action-container mission-brief-actions">
+                    <button id="btn-story-paper-continue" class="btn btn-primary">進行推理</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 自訂確認視窗 (Confirm Modal) -->
+        <div id="confirm-modal" class="modal-overlay" aria-hidden="true" inert hidden>
+            <div class="modal-panel">
+                <h2 id="confirm-title" class="error-title">確認</h2>
+                <div id="confirm-desc" style="margin-bottom: 20px; color: var(--color-text-main);">您確定要執行此操作？</div>
+                <div class="action-container" style="justify-content: center;">
+                    <button id="btn-confirm-cancel" class="btn btn-secondary">取消</button>
+                    <button id="btn-confirm-ok" class="btn btn-primary" style="background:var(--color-error); border-color:var(--color-error);">確定</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Victory Overlay for Endless Mode -->
+    <div id="victory-overlay" class="victory-overlay hidden">
+        <div class="victory-content">
+            <h2 class="victory-title">ENCOUNTER SECURED</h2>
+            <p class="victory-subtitle">追跡目標已鎖定</p>
+            <div class="victory-stats" id="victory-stats-row"></div>
+        </div>
+    </div>
+
+    <script src="js/audio.js?v=20260501-gameflow2"></script>
+    <script src="js/story-volume-data.js?v=20260501"></script>
+    <script src="js/app.js?v=20260501-gameflow2"></script>
+    <script src="js/pwa.js?v=20260501-gameflow2"></script>
+    <script src="js/firebase-config.js?v=20260501-gameflow2"></script>
+    <script type="module" src="js/firebase-auth.js?v=20260501-gameflow2"></script>
+    <script type="module" src="js/firebase-save.js?v=20260501-gameflow2"></script>
+</body>
+</html>
