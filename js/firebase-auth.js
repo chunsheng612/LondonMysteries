@@ -108,21 +108,24 @@ async function loginWithGoogle() {
 
     try {
         await authReady;
-        // 優先嘗試使用彈窗登入 (signInWithPopup)
-        // 在行動裝置（尤其是 iOS Safari）上，這通常比重新導向更可靠，且能避免 sessionStorage 遺失的問題
+        
+        // 在行動裝置或 PWA 環境下，優先使用 signInWithRedirect，因為彈窗在行動瀏覽器中非常容易被阻擋或出錯
+        if (isMobileDevice() || isStandaloneApp()) {
+            console.log("[Auth] Mobile/Standalone detected, using Redirect flow.");
+            await signInWithRedirect(auth, provider);
+            return; // 重新導向後頁面會刷掉，後續代碼不會執行
+        }
+
+        // 桌面端則優先嘗試彈窗，體驗較好
+        console.log("[Auth] Desktop detected, using Popup flow.");
         await signInWithPopup(auth, provider);
     } catch (error) {
         console.error("Auth Error:", error);
         
-        // 如果是彈窗被阻擋 (popup-blocked) 或環境不支援彈窗，則嘗試降級使用重新導向
-        if (shouldFallbackToRedirect(error) || error.code === "auth/popup-blocked") {
+        // 如果彈窗失敗（例如被阻擋），降級到重新導向
+        if (error.code === "auth/popup-blocked" || error.code === "auth/operation-not-supported-in-this-environment") {
             try {
-                // 如果在 PWA 模式下，提醒使用者重新導向可能會跳出 App
-                if (isStandaloneApp()) {
-                    showMessage("目前的環境需要跳轉頁面進行驗證，請在完成後返回遊戲。");
-                } else {
-                    showMessage("即將跳轉至 Google 登入頁面...");
-                }
+                showMessage("目前的環境需要跳轉頁面進行驗證，請在完成後返回遊戲。");
                 await signInWithRedirect(auth, provider);
             } catch (redirectError) {
                 console.error("Redirect Error:", redirectError);
@@ -131,13 +134,18 @@ async function loginWithGoogle() {
             return;
         }
         
-        // 其他類型的錯誤直接顯示
-        showMessage(getAuthErrorMessage(error), "error");
+        // 專門處理授權網域錯誤
+        if (error.code === "auth/unauthorized-domain") {
+            showMessage(`登入失敗：當前網域尚未加入 Firebase 授權清單。請在 Firebase 控制台添加 ${window.location.hostname}`, "error");
+        } else {
+            showMessage(getAuthErrorMessage(error), "error");
+        }
     } finally {
         loginInProgress = false;
         setLoginButtonsBusy(false);
     }
 }
+
 
 async function logoutUser() {
     try {
