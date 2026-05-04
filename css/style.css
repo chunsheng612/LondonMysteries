@@ -573,7 +573,7 @@ body {
 
 
 
-#view-hub .hub-content:not([data-active-panel="home"]):not(.home-screen) {
+#view-hub .hub-content {
     padding-top: calc(var(--safe-top) + var(--global-header-height, 112px) + 20px) !important;
 }
 .logo-box {

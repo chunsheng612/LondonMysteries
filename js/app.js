@@ -3465,7 +3465,8 @@ class DetectiveMysteryGame {
         }
 
         if (target === 'home') {
-            this.els.globalHeader.classList.add('hidden');
+            this.els.globalHeader.classList.remove('hidden');
+            this.els.headerTitle.textContent = '偵探事務所';
         } else {
             this.els.globalHeader.classList.remove('hidden');
             const titles = { shop: '商店', missions: '卷宗', daily: '每日', inventory: '使魔與人物', settings: '設定' };
