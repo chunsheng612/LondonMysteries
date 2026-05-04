@@ -571,6 +571,14 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
+#view-hub .hub-content.home-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0 20px;
+}
+
 
 
 #view-hub .hub-content {
@@ -923,8 +931,10 @@ body {
 .hub-content.hub-hero-layout > .hub-top-card {
     display: none;
 }
-/* Hide NPC bubble when active panel is not home */
-#view-hub .hub-content:not([data-active-panel="home"]) .hub-hero-container {
+/* Login screen: center the card and remove hero elements */
+.hub-content.home-screen .hub-hero-container,
+.hub-content.home-screen .hub-panel-stack,
+.hub-content.home-screen .hub-utility-row {
     display: none;
 }
 .home-shell {

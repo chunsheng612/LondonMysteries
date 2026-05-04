@@ -3709,6 +3709,7 @@ window.STORY_VOLUME_DATA = {
               "endingHook": "兩人重重摔在瀑布盡頭的底層空間，在那裡，他們看到了倫敦最陰森、最真實的反面投影...",
               "client": "莫里亞蒂",
               "clientPortrait": "portrait-rival",
+              "repeat": 2,
               "quickSummary": ""
             },
             {
@@ -3746,6 +3747,7 @@ window.STORY_VOLUME_DATA = {
               "endingHook": "現實空間再次重組，兩人回到了高塔頂端，但莫里亞蒂的意識核心已經與「大腦一號」完全融合，準備發起最終的上傳...",
               "client": "莫里亞蒂信差",
               "clientPortrait": "portrait-rival",
+              "repeat": 2,
               "quickSummary": ""
             },
             {
@@ -3898,11 +3900,31 @@ window.STORY_VOLUME_DATA = {
                   "id": "100-2",
                   "rule": "1a2b",
                   "slotCount": 5,
-                  "title": "倫敦謎案簿的終章：核心碼 (1A2B)",
+                  "title": "倫敦謎案簿的終章：核心碼：第一層 (1A2B)",
                   "openingDialogue": [
                     {
                       "speaker": "你",
-                      "text": "接下來的編碼更複雜了，我們必須加快速度。",
+                      "text": "這是第一層密鑰，讓我們解開它！",
+                      "portrait": "portrait-client"
+                    }
+                  ],
+                  "closingDialogue": [
+                    {
+                      "speaker": "夏洛特",
+                      "text": "還不夠！莫里亞蒂在核心深處還留了一手！",
+                      "portrait": "portrait-iris"
+                    }
+                  ]
+                },
+                {
+                  "id": "100-3",
+                  "rule": "1a2b",
+                  "slotCount": 6,
+                  "title": "倫敦謎案簿的終章：終極核心 (1A2B)",
+                  "openingDialogue": [
+                    {
+                      "speaker": "你",
+                      "text": "這是最後的 6 位數編碼了...倫敦的未來就在這一次推理中！",
                       "portrait": "portrait-client"
                     }
                   ]

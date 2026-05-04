@@ -744,7 +744,7 @@ class DetectiveMysteryGame {
                 ? `案件「${override.title || level.title}」暫時失手。${override.quickSummary}`
                 : `案件「${override.title || level.title}」暫時失手，線索還沒完全接回來。`;
 
-            return this.normalizePuzzleDefinition({
+            const finalLevel = this.normalizePuzzleDefinition({
                 ...level,
                 title: override.title || level.title,
                 name: `案件 #${String(level.id).padStart(2, '0')}：${override.title || level.title}`,
@@ -777,10 +777,25 @@ class DetectiveMysteryGame {
                 quickSummary: override.quickSummary || ''
             });
 
-            // 如果原本沒有 stages，且 rule 不是 1a2b，則自動建立兩個階段 (開胃菜 + 主菜)
+            // 初始化 stages
             if (override.stages) {
                 finalLevel.stages = override.stages;
-            } else if (finalLevel.rule && finalLevel.rule !== '1a2b') {
+            } else if (override.repeat && override.repeat > 1) {
+                // 如果指定了 repeat，則建立多個相同規則的階段
+                finalLevel.stages = [];
+                for (let i = 0; i < override.repeat; i++) {
+                    finalLevel.stages.push({
+                        id: `${level.id}-stage-${i+1}`,
+                        rule: finalLevel.rule || '1a2b',
+                        slotCount: finalLevel.slotCount,
+                        title: `${finalLevel.title}：第 ${i + 1} 層`,
+                        openingDialogue: i === 0 ? [] : [
+                            { speaker: '你', text: `看來還有一層保護...這是第 ${i + 1} 組編碼。`, portrait: 'portrait-client' }
+                        ]
+                    });
+                }
+            } else if (finalLevel.rule && finalLevel.rule !== '1a2b' && !finalLevel.stages) {
+                // 如果是特殊規則且沒有自訂階段，自動建立「特殊規則 + 1A2B」兩階段
                 const appetizerRule = finalLevel.rule;
                 finalLevel.stages = [
                     {
@@ -3464,7 +3479,9 @@ class DetectiveMysteryGame {
             hubEl.dataset.activePanel = target;
         }
 
-        if (target === 'home') {
+        if (!this.sessionStarted) {
+            this.els.globalHeader.classList.add('hidden');
+        } else if (target === 'home') {
             this.els.globalHeader.classList.remove('hidden');
             this.els.headerTitle.textContent = '偵探事務所';
         } else {
@@ -3508,6 +3525,9 @@ class DetectiveMysteryGame {
 
         if (this.els.btnHubHome) {
             this.els.btnHubHome.classList.toggle('hidden', target === 'home');
+        }
+        if (this.els.btnGlobalBack) {
+            this.els.btnGlobalBack.classList.toggle('hidden', target === 'home');
         }
 
         if (target === 'shop') {
@@ -4009,23 +4029,23 @@ class DetectiveMysteryGame {
 
         if (this.els.storyProgressBadge) {
             this.els.storyProgressBadge.textContent = hasStoryLeft
-                ? `${currentLevel.storyArcTitle}｜第 ${currentLevel.id} 關`
+                ? `第 ${currentLevel.id} 關`
                 : '主線已結案';
         }
 
         if (this.els.storyNextTitle) {
-            this.els.storyNextTitle.textContent = hasStoryLeft ? `${currentLevel.storyArcTitle}` : '所有正式案件已完成';
+            this.els.storyNextTitle.textContent = hasStoryLeft ? `${currentLevel.chapterTitle}` : '所有正式案件已完成';
         }
 
         if (this.els.storyNextDesc) {
             this.els.storyNextDesc.textContent = hasStoryLeft
-                ? `${currentLevel.chapter}｜第 ${currentLevel.chapterOrder} 件「${currentLevel.title}」`
+                ? `第 ${currentLevel.chapterOrder} 件「${currentLevel.title}」`
                 : '可以重玩主線關卡，或專心衝刺每日推理與每週全勤獎勵。';
         }
 
         if (this.els.storyProgressText) {
             this.els.storyProgressText.textContent = hasStoryLeft
-                ? `${currentLevel.storyArcTitle}｜${currentLevel.chapter}｜第 ${currentLevel.chapterOrder} 件`
+                ? `${currentLevel.chapterTitle}｜第 ${currentLevel.chapterOrder} 件`
                 : '所有正式案件已封存';
         }
 
