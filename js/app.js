@@ -512,7 +512,21 @@ class DetectiveMysteryGame {
             { id: '9', label: '9', name: '9' }
         ];
 
-        this.storyVolumeData = window.STORY_VOLUME_DATA || null;
+        const rawVolumeData = window.STORY_VOLUME_DATA;
+        if (rawVolumeData && rawVolumeData.volumes) {
+            const levelsDict = {};
+            rawVolumeData.volumes.forEach(v => {
+                v.chapters.forEach(c => {
+                    c.levels.forEach(l => {
+                        levelsDict[String(l.id)] = l;
+                    });
+                });
+            });
+            this.storyVolumeData = { ...rawVolumeData, levels: levelsDict };
+        } else {
+            this.storyVolumeData = rawVolumeData || null;
+        }
+
         this.levels = this.generateCasebookLevels();
         this.applyStoryVolumeOverrides();
         this.characters = this.getCharacterRoster();
