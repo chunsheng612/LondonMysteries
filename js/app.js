@@ -4131,6 +4131,9 @@ class DetectiveMysteryGame {
         document.querySelectorAll('.modal-overlay').forEach(modal => {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
+                    // Result modal and story parchment should NOT be closed by clicking backdrop
+                    if (modal.id === 'modal' || modal.id === 'story-paper-modal') return;
+
                     if (window.audio) window.audio.playClick();
                     
                     // Specialized cleanup for specific modals
