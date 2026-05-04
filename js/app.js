@@ -347,7 +347,6 @@ class DetectiveMysteryGame {
             hubTipText: document.getElementById('hub-tip-text'),
             btnHubTipShop: document.getElementById('btn-hub-tip-shop'),
             btnGuestStart: document.getElementById('btn-guest-start'),
-            btnHubHome: document.getElementById('btn-hub-home'),
             btnDailyStart: document.getElementById('btn-daily-start'),
             btnEndlessStart: document.getElementById('btn-endless-start'),
             hubPanels: Array.from(document.querySelectorAll('.hub-panel')),
@@ -3523,9 +3522,6 @@ class DetectiveMysteryGame {
             hubContent.scrollTop = 0;
         }
 
-        if (this.els.btnHubHome) {
-            this.els.btnHubHome.classList.toggle('hidden', target === 'home');
-        }
         if (this.els.btnGlobalBack) {
             this.els.btnGlobalBack.classList.toggle('hidden', target === 'home');
         }
@@ -4184,10 +4180,6 @@ class DetectiveMysteryGame {
             this.showLocation('shop');
         });
 
-        this.els.btnHubHome?.addEventListener('click', () => {
-            if (window.audio) window.audio.playClick();
-            this.forceReturnHub();
-        });
 
         this.els.btnGuestStart?.addEventListener('click', () => {
             if (window.audio) window.audio.playClick();
