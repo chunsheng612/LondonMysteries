@@ -1022,12 +1022,27 @@ body {
 .auth-user-chip {
     width:100%;
     justify-content:center;
-    padding:10px 12px;
+    padding:10px 14px;
     margin:0;
     border-radius:999px;
-    background:rgba(255,255,255,0.82);
-    border:1px solid rgba(255,255,255,0.9);
+    background:rgba(255,255,255,0.95);
+    border:1px solid rgba(212, 168, 83, 0.3);
+    color: #000000 !important;
 }
+
+.auth-user-meta strong {
+    color: #000000 !important;
+    font-weight: 900;
+    display: block;
+}
+
+.auth-user-meta span {
+    color: #333333 !important;
+    font-size: 11px;
+    display: block;
+}
+
+
 .google-mark {
     width:18px;
     height:18px;
@@ -1673,15 +1688,16 @@ body {
     left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 2000;
+    z-index: 99999;
     display: none;
     align-items: center;
     justify-content: center;
     padding: 20px;
-    background: rgba(5, 10, 16, 0.75);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
+
 
 .modal-overlay.active {
     display: flex;
@@ -2287,13 +2303,6 @@ body {
     position: absolute;
     right: -4px;
     top: 50%;
-    transform: translateY(-50%) scale(0.8); /* Scale to 0.8x per user request */
-    width: auto;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
     height: 100%;
     padding: 0;
     overflow: visible;

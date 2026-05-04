@@ -4366,9 +4366,7 @@ class DetectiveMysteryGame {
 
         this.els.btnGlobalBack.addEventListener('click', () => {
             if (window.audio) window.audio.playClick();
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(() => { });
-            }
+            
             if (this.viewState === 'game') {
                 this.openRetreatConfirm();
                 return;
@@ -4379,6 +4377,7 @@ class DetectiveMysteryGame {
                 this.forceReturnHub();
             }
         });
+
 
         this.els.btnQuit?.addEventListener('click', () => {
             if (window.audio) window.audio.playClick();
