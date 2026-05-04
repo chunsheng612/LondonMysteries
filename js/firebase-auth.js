@@ -1,5 +1,5 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { getAnalytics, isSupported as analyticsSupported } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-analytics.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js";
+import { getAnalytics, isSupported as analyticsSupported } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-analytics.js";
 import {
     browserLocalPersistence,
     getAuth,
@@ -10,19 +10,21 @@ import {
     signInWithPopup,
     signInWithRedirect,
     signOut
-} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
 
 const firebaseConfig = window.__FIREBASE_CONFIG__;
 
 if (!firebaseConfig) {
+    console.error("[Auth] Missing window.__FIREBASE_CONFIG__");
     throw new Error("Missing window.__FIREBASE_CONFIG__");
 }
 
+console.log("[Auth] Initializing Firebase...");
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 auth.languageCode = "zh-TW";
-const authReady = setPersistence(auth, browserLocalPersistence).catch(() => {
-    // Keep default persistence if the environment refuses explicit local persistence.
+const authReady = setPersistence(auth, browserLocalPersistence).catch((err) => {
+    console.warn("[Auth] Persistence error:", err);
 });
 
 analyticsSupported().then((supported) => {
@@ -30,7 +32,7 @@ analyticsSupported().then((supported) => {
         getAnalytics(firebaseApp);
     }
 }).catch(() => {
-    // Ignore analytics initialization issues on unsupported environments.
+    // Ignore analytics initialization
 });
 
 const provider = new GoogleAuthProvider();
@@ -56,7 +58,7 @@ function showMessage(text, type = "info") {
         window.app.showMessage(text, type);
         return;
     }
-    console.log(text);
+    console.log(`[Message] ${text}`);
 }
 
 function isMobileDevice() {
@@ -70,27 +72,16 @@ function isStandaloneApp() {
 function getAuthErrorMessage(error) {
     switch (error?.code) {
         case "auth/popup-closed-by-user":
-            return "登入視窗已關閉，尚未完成 Google 驗證。";
+            return "登入視窗已關閉。";
         case "auth/popup-blocked":
-            return "瀏覽器擋下了登入視窗，請允許彈出視窗後再試一次。";
-        case "auth/cancelled-popup-request":
-            return "登入程序已被新的請求取代，請再點一次 Google 登入。";
+            return "彈出視窗被阻擋，請允許權限。";
         case "auth/unauthorized-domain":
-            return `目前網域 ${window.location.hostname} 尚未加入 Firebase Authorized domains。`;
+            return `網域未授權：${window.location.hostname}`;
         case "auth/network-request-failed":
-            return "網路請求失敗，請確認目前頁面可正常連線到 Firebase。";
+            return "網路連線失敗。";
         default:
-            return `登入失敗：${error?.code || error?.message || "未知錯誤"}`;
+            return `錯誤：${error?.code || error?.message || "未知"}`;
     }
-}
-
-function shouldFallbackToRedirect(error) {
-    const redirectReadyCodes = new Set([
-        "auth/popup-blocked",
-        "auth/cancelled-popup-request",
-        "auth/operation-not-supported-in-this-environment"
-    ]);
-    return isMobileDevice() && redirectReadyCodes.has(error?.code);
 }
 
 function setLoginButtonsBusy(isBusy) {
@@ -109,78 +100,61 @@ async function loginWithGoogle() {
     try {
         await authReady;
         
-        // 對於 PWA 獨立模式，重新導向通常比彈窗更穩定
         if (isStandaloneApp()) {
-            console.log("[Auth] Standalone PWA detected, using Redirect flow.");
+            console.log("[Auth] PWA Mode: using Redirect.");
             await signInWithRedirect(auth, provider);
             return;
         }
 
-        // 對於一般行動瀏覽器或桌面端，先嘗試使用彈窗 (signInWithPopup)
-        // 這在 iOS Safari 等現代行動瀏覽器上通常運作良好且體驗更順暢
-        console.log("[Auth] Attempting Popup flow...");
+        console.log("[Auth] Attempting Popup...");
         await signInWithPopup(auth, provider);
         
     } catch (error) {
-        console.error("Auth Error:", error);
+        console.error("[Auth] Login Error:", error);
         
-        // 如果彈窗被阻擋或環境不支援（常見於行動端某些 App 內置瀏覽器），則降級到重新導向
         if (
             error.code === "auth/popup-blocked" || 
             error.code === "auth/operation-not-supported-in-this-environment" ||
             error.code === "auth/cancelled-popup-request"
         ) {
             try {
-                console.log("[Auth] Popup blocked or failed, falling back to Redirect.");
-                showMessage("目前的環境需要跳轉頁面進行驗證，請在完成後返回遊戲。");
+                console.log("[Auth] Falling back to Redirect...");
+                showMessage("即將跳轉進行驗證...");
                 await signInWithRedirect(auth, provider);
             } catch (redirectError) {
-                console.error("Redirect Error:", redirectError);
+                console.error("[Auth] Redirect Fallback Error:", redirectError);
                 showMessage(getAuthErrorMessage(redirectError), "error");
             }
             return;
         }
         
-        // 專門處理授權網域錯誤
-        if (error.code === "auth/unauthorized-domain") {
-            showMessage(`網域未授權：請在 Firebase 控制台添加 ${window.location.hostname}`, "error");
-        } else {
-            showMessage(getAuthErrorMessage(error), "error");
-        }
+        showMessage(getAuthErrorMessage(error), "error");
     } finally {
         loginInProgress = false;
         setLoginButtonsBusy(false);
     }
 }
 
-
-
 async function logoutUser() {
     try {
         await signOut(auth);
         showMessage("已登出");
     } catch (error) {
-        console.error(error);
-        showMessage(`登出失敗：${error.code || error.message}`, "error");
+        showMessage(`登出失敗：${error.code}`, "error");
     }
 }
 
 function updateAuthUI(user) {
+    console.log("[Auth] Updating UI for user:", user?.email || "Guest");
     if (!els.guest || !els.user) return;
 
     if (user) {
         els.guest.classList.add("hidden");
         els.user.classList.remove("hidden");
 
-        if (els.avatar) {
-            els.avatar.src = user.photoURL || "assets/icons/potion_blue.png";
-        }
-        if (els.name) {
-            els.name.textContent = user.displayName || "已登入玩家";
-        }
-        if (els.email) {
-            els.email.textContent = user.email || "";
-        }
+        if (els.avatar) els.avatar.src = user.photoURL || "assets/icons/potion_blue.png";
+        if (els.name) els.name.textContent = user.displayName || "已登入玩家";
+        if (els.email) els.email.textContent = user.email || "";
 
         window.currentUser = user;
         if (window.app) {
@@ -192,7 +166,6 @@ function updateAuthUI(user) {
     } else {
         els.guest.classList.remove("hidden");
         els.user.classList.add("hidden");
-
         window.currentUser = null;
         if (window.app) {
             window.app.currentUser = null;
@@ -203,13 +176,11 @@ function updateAuthUI(user) {
     }
 }
 
-// 使用事件代理 (Event Delegation) 監聽所有 Google 登入按鈕
-// 這能確保即使按鈕是動態生成的或是被 app.js 重新操作過，依然能正確觸發
+// Global click listener using event delegation
 document.addEventListener('click', (e) => {
     const loginBtn = e.target.closest('#btn-login-google, #btn-settings-login-google');
     if (loginBtn) {
         e.preventDefault();
-        // 播放點擊音效 (如果有的話)
         if (window.audio) window.audio.playClick();
         console.log(`[Auth] Login triggered via ${loginBtn.id}`);
         void loginWithGoogle();
@@ -220,20 +191,26 @@ if (els.logout) {
     els.logout.addEventListener("click", logoutUser);
 }
 
-// 處理重新導向結果
-authReady.then(() => getRedirectResult(auth))
-    .then((result) => {
-        if (result?.user) {
-            showMessage("Google 登入完成");
-        }
-    })
-    .catch((error) => {
-        console.error("[Auth] Redirect Result Error:", error);
-        if (error?.code === "auth/no-auth-event") return;
+// Handle redirect result
+authReady.then(() => {
+    console.log("[Auth] Checking redirect result...");
+    return getRedirectResult(auth);
+}).then((result) => {
+    if (result?.user) {
+        console.log("[Auth] Redirect login success:", result.user.email);
+        showMessage("Google 登入完成");
+        updateAuthUI(result.user);
+    }
+}).catch((error) => {
+    console.error("[Auth] Redirect error:", error);
+    if (error?.code !== "auth/no-auth-event") {
         showMessage(getAuthErrorMessage(error), "error");
-    });
+    }
+});
 
+// Monitor auth state
 onAuthStateChanged(auth, (user) => {
+    console.log("[Auth] Auth state changed:", user ? "LoggedIn" : "LoggedOut");
     loginInProgress = false;
     setLoginButtonsBusy(false);
     updateAuthUI(user);
