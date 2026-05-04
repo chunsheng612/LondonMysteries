@@ -559,19 +559,21 @@ body {
 
 /* Hub */
 #view-hub .hub-content {
-    flex: 1;
-    width: 100%;
+    position: absolute;
+    inset: 0;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: calc(var(--safe-top) + 24px) 20px calc(var(--safe-bottom) + 32px);
+    padding: calc(var(--safe-top) + 20px) 20px calc(var(--safe-bottom) + 140px);
     background: rgba(0,0,0,0.08);
     gap: 16px;
     -webkit-overflow-scrolling: touch;
 }
+
+
 
 #view-hub .hub-content:not([data-active-panel="home"]):not(.home-screen) {
     padding-top: calc(var(--safe-top) + var(--global-header-height, 100px) + 8px) !important;
@@ -904,11 +906,12 @@ body {
 }
 .hub-content.home-screen .home-shell {
     width: min(100%, 340px);
-    max-height: calc(var(--app-visible-height) - var(--safe-top) - var(--safe-bottom) - 40px);
     padding: 26px 22px;
     gap: 16px;
-    overflow: hidden;
+    overflow-y: auto;
+    max-height: 90vh;
 }
+
 .hub-content.home-screen .home-brand h1 {
     font-size: 40px;
     line-height: 1.12;
@@ -1235,7 +1238,7 @@ body {
     background: var(--glass-bg);
     border: var(--glass-border);
     box-shadow: var(--shadow-soft);
-    overflow: hidden;
+    overflow: visible;
 }
 .hub-panel.active {
     display: flex;
@@ -1809,16 +1812,15 @@ body {
 }
 
 .hub-bottom-nav {
-    margin-top: auto;
-    position: relative;
-    left: auto;
-    right: auto;
-    bottom: auto;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: flex;
     justify-content: space-around;
     align-items: flex-end;
     width: 100%;
-    flex-shrink: 0;
+    z-index: 1000;
     min-height: 92px;
     padding: 10px 8px calc(var(--safe-bottom) + 10px);
     border-radius: 28px 28px 0 0;
@@ -3270,6 +3272,7 @@ body {
             calc(var(--safe-top) + var(--global-header-height) + 8px)
             12px
             calc(var(--safe-bottom) + 16px);
+
     }
 
     #view-game .game-header,
