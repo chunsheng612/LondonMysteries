@@ -109,22 +109,29 @@ async function loginWithGoogle() {
     try {
         await authReady;
         
-        // 在行動裝置或 PWA 環境下，優先使用 signInWithRedirect，因為彈窗在行動瀏覽器中非常容易被阻擋或出錯
-        if (isMobileDevice() || isStandaloneApp()) {
-            console.log("[Auth] Mobile/Standalone detected, using Redirect flow.");
+        // 對於 PWA 獨立模式，重新導向通常比彈窗更穩定
+        if (isStandaloneApp()) {
+            console.log("[Auth] Standalone PWA detected, using Redirect flow.");
             await signInWithRedirect(auth, provider);
-            return; // 重新導向後頁面會刷掉，後續代碼不會執行
+            return;
         }
 
-        // 桌面端則優先嘗試彈窗，體驗較好
-        console.log("[Auth] Desktop detected, using Popup flow.");
+        // 對於一般行動瀏覽器或桌面端，先嘗試使用彈窗 (signInWithPopup)
+        // 這在 iOS Safari 等現代行動瀏覽器上通常運作良好且體驗更順暢
+        console.log("[Auth] Attempting Popup flow...");
         await signInWithPopup(auth, provider);
+        
     } catch (error) {
         console.error("Auth Error:", error);
         
-        // 如果彈窗失敗（例如被阻擋），降級到重新導向
-        if (error.code === "auth/popup-blocked" || error.code === "auth/operation-not-supported-in-this-environment") {
+        // 如果彈窗被阻擋或環境不支援（常見於行動端某些 App 內置瀏覽器），則降級到重新導向
+        if (
+            error.code === "auth/popup-blocked" || 
+            error.code === "auth/operation-not-supported-in-this-environment" ||
+            error.code === "auth/cancelled-popup-request"
+        ) {
             try {
+                console.log("[Auth] Popup blocked or failed, falling back to Redirect.");
                 showMessage("目前的環境需要跳轉頁面進行驗證，請在完成後返回遊戲。");
                 await signInWithRedirect(auth, provider);
             } catch (redirectError) {
@@ -136,7 +143,7 @@ async function loginWithGoogle() {
         
         // 專門處理授權網域錯誤
         if (error.code === "auth/unauthorized-domain") {
-            showMessage(`登入失敗：當前網域尚未加入 Firebase 授權清單。請在 Firebase 控制台添加 ${window.location.hostname}`, "error");
+            showMessage(`網域未授權：請在 Firebase 控制台添加 ${window.location.hostname}`, "error");
         } else {
             showMessage(getAuthErrorMessage(error), "error");
         }
@@ -145,6 +152,7 @@ async function loginWithGoogle() {
         setLoginButtonsBusy(false);
     }
 }
+
 
 
 async function logoutUser() {
