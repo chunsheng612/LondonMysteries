@@ -100,16 +100,13 @@ async function loginWithGoogle() {
     try {
         await authReady;
         
-        if (isStandaloneApp()) {
-            console.log("[Auth] PWA Mode: using Redirect.");
-            await signInWithRedirect(auth, provider);
-            return;
-        }
-
-        console.log("[Auth] Attempting Popup...");
+        // 在 PWA 獨立模式下，signInWithPopup 通常比 Redirect 更能保持 App 的上下文 (Context)
+        // 尤其是在 iOS 上，Redirect 可能會導致 App 狀態重置
+        console.log("[Auth] Attempting Popup login (optimized for PWA/Mobile)...");
         await signInWithPopup(auth, provider);
         
     } catch (error) {
+
         console.error("[Auth] Login Error:", error);
         
         if (

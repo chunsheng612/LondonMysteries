@@ -5217,6 +5217,12 @@ class DetectiveMysteryGame {
         this.gameState.timeLeft = this.gameState.timeLimit || 0;
         this.gameState.selectedBubbleIndex = null;
         this.gameState.isSwapping = false;
+        
+        // 增加難度：限制交換次數
+        // 基本難度：格數越多，限制越緊。公式：格數 * 1.5 (無條件進位)
+        this.gameState.maxSwaps = Math.ceil(slotCount * 1.5) + (levelData?.difficulty || 0);
+        this.gameState.swapsLeft = this.gameState.maxSwaps;
+
 
         this.els.slotsContainer.innerHTML = '';
         this.els.inputConsole.classList.add('hidden');
@@ -5248,8 +5254,12 @@ class DetectiveMysteryGame {
                     </div>
                 `).join('')}
             </div>
-            <div class="bubble-status">步數：${this.gameState.turn}</div>
+            <div class="bubble-status">
+                <span>步數：${this.gameState.turn}</span>
+                <span class="swap-limit ${this.gameState.swapsLeft <= 2 ? 'danger' : ''}">剩餘交換次數：${this.gameState.swapsLeft}</span>
+            </div>
         `;
+
         
         const nodes = bContainer.querySelectorAll('.bubble-node');
         nodes.forEach(node => {
@@ -5288,11 +5298,18 @@ class DetectiveMysteryGame {
                     this.gameState.input[prevIdx] = this.gameState.input[idx];
                     this.gameState.input[idx] = temp;
                     this.gameState.turn++;
+                    this.gameState.swapsLeft--;
                     this.gameState.selectedBubbleIndex = null;
                     this.gameState.isSwapping = false;
                     this.renderBubbleUI();
-                    this.checkBubbleWin();
+                    
+                    if (this.gameState.swapsLeft <= 0 && !this.checkBubbleWin(true)) {
+                        this.handleBubbleFailure();
+                    } else {
+                        this.checkBubbleWin();
+                    }
                 }, 400);
+
             } else {
                 // Not adjacent, just select the new one
                 this.gameState.selectedBubbleIndex = idx;
@@ -5302,8 +5319,9 @@ class DetectiveMysteryGame {
         }
     }
 
-    checkBubbleWin() {
+    checkBubbleWin(silent = false) {
         if (this.gameState.input.join(',') === this.gameState.secret.join(',')) {
+            if (silent) return true;
             this.gameState.solved = true;
             this.clearCombatTimer();
             if (window.audio && window.audio.playSuccess) window.audio.playSuccess();
@@ -5314,8 +5332,22 @@ class DetectiveMysteryGame {
             setTimeout(() => {
                 this.showStoryResult(this.gameState.input, { exact: this.gameState.slotCount, totalSlots: this.gameState.slotCount, turns: this.gameState.turn, hintUsed: false }, 3);
             }, 1000);
+            return true;
         }
+        return false;
     }
+
+    handleBubbleFailure() {
+        this.gameState.solved = true;
+        this.clearCombatTimer();
+        if (window.audio && window.audio.playError) window.audio.playError();
+        
+        showMessage("交換次數用盡，推理失敗！", "error");
+        setTimeout(() => {
+            this.showStoryResult(this.gameState.input, { exact: 0, totalSlots: this.gameState.slotCount, turns: this.gameState.turn, hintUsed: false }, 0);
+        }, 1500);
+    }
+
 
     setupBoard(title, desc, rule, slotCount = 5, levelData = null) {
         this.clearCombatTimer();
