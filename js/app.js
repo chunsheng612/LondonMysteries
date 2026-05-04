@@ -323,6 +323,7 @@ class DetectiveMysteryGame {
     constructor() {
         this.sessionStarted = false;
         this.pendingEndlessContinue = null;
+        this.nextHubPanel = 'home';
         // Essential DOM setup
         this.els = {
             appContainer: document.getElementById('app-container'),
@@ -775,6 +776,34 @@ class DetectiveMysteryGame {
                 volumePrimaryModes: override.volumePrimaryModes || '',
                 quickSummary: override.quickSummary || ''
             });
+
+            // 如果原本沒有 stages，且 rule 不是 1a2b，則自動建立兩個階段 (開胃菜 + 主菜)
+            if (override.stages) {
+                finalLevel.stages = override.stages;
+            } else if (finalLevel.rule && finalLevel.rule !== '1a2b') {
+                const appetizerRule = finalLevel.rule;
+                finalLevel.stages = [
+                    {
+                        id: `${level.id}-appetizer`,
+                        rule: appetizerRule,
+                        slotCount: finalLevel.slotCount,
+                        title: `${finalLevel.title}：前奏`,
+                        closingDialogue: [
+                            { speaker: '夏洛特', text: '這只是開胃菜...真正的難題還在後頭。', portrait: 'portrait-iris' }
+                        ]
+                    },
+                    {
+                        id: `${level.id}-main`,
+                        rule: '1a2b',
+                        slotCount: finalLevel.slotCount,
+                        title: `${finalLevel.title}：核心碼`,
+                        openingDialogue: [
+                            { speaker: '你', text: '現在，讓我們解開真正的密碼。', portrait: 'portrait-client' }
+                        ]
+                    }
+                ];
+            }
+            return finalLevel;
         });
     }
 
@@ -2831,11 +2860,11 @@ class DetectiveMysteryGame {
         }, 20000);
     }
 
-    forceReturnHub() {
+    forceReturnHub(panel = 'home') {
         this.clearCombatTimer();
         this.dialogue.abort();
         this.setModalActive(this.els.missionModal, false);
-        this.activeHubPanel = 'home';
+        this.activeHubPanel = panel;
         this.playTransitionOverlay(() => {
             this.showLocation('hub');
             this.renderMap();
@@ -4427,11 +4456,9 @@ class DetectiveMysteryGame {
         this.els.btnModalAction.addEventListener('click', () => {
             if (window.audio) window.audio.playClick();
             this.closeResultModal();
-            if (this.gameState.gameOver) {
-                this.forceReturnHub();
-            } else {
-                this.forceReturnHub();
-            }
+            const targetPanel = this.nextHubPanel || 'home';
+            this.nextHubPanel = null; // Reset
+            this.forceReturnHub(targetPanel);
         });
     }
 
@@ -4904,8 +4931,18 @@ class DetectiveMysteryGame {
             this.nextEndlessOrder();
         } else {
             const lv = this.levels.find(l => l.id === levelId);
-            this.openStoryParchment(lv, () => this.dialogue.play(this.buildLevelIntro(lv), () => this.startPattern(levelId)));
+            
+            // 初始化多階段關卡邏輯
+            this.gameState.stages = lv.stages || [lv];
+            this.gameState.currentStageIndex = 0;
+            
+            this.openStoryParchment(lv, () => {
+                const firstStage = this.gameState.stages[0];
+                const introLines = firstStage.openingDialogue || this.buildLevelIntro(lv);
+                this.dialogue.play(introLines, () => this.startPattern(levelId));
+            });
         }
+
     }
 
     nextEndlessOrder() {
@@ -4939,8 +4976,17 @@ class DetectiveMysteryGame {
 
     startPattern(levelId) {
         const lv = this.levels.find(l => l.id === levelId);
-        this.setupBoard(lv.name, `故事模式｜${lv.chapter}`, lv.rule || '1a2b', lv.slotCount, lv);
+        const stage = this.gameState.stages[this.gameState.currentStageIndex];
+        
+        // 如果是後續階段，標題與描述可能不同
+        const title = stage.title || lv.name;
+        const desc = stage.chapter || `故事模式｜${lv.chapter}`;
+        const rule = stage.rule || lv.rule || '1a2b';
+        const slotCount = stage.slotCount || lv.slotCount || 3;
+        
+        this.setupBoard(title, desc, rule, slotCount, lv);
     }
+
 
     applyGameLayoutMetrics(slotCount = 3, rule = '1a2b') {
         if (!this.els.viewGame) return;
@@ -5219,9 +5265,10 @@ class DetectiveMysteryGame {
         this.gameState.isSwapping = false;
         
         // 增加難度：限制交換次數
-        // 基本難度：格數越多，限制越緊。公式：格數 * 1.5 (無條件進位)
-        this.gameState.maxSwaps = Math.ceil(slotCount * 1.5) + (levelData?.difficulty || 0);
+        // 嚴格模式：格數 * 1.2 (無條件進位)。例如 5 格 = 6 次交換
+        this.gameState.maxSwaps = Math.ceil(slotCount * 1.2) + (levelData?.difficulty || 0);
         this.gameState.swapsLeft = this.gameState.maxSwaps;
+
 
 
         this.els.slotsContainer.innerHTML = '';
@@ -5330,7 +5377,7 @@ class DetectiveMysteryGame {
             nodes.forEach(n => n.classList.add('sorted'));
             
             setTimeout(() => {
-                this.showStoryResult(this.gameState.input, { exact: this.gameState.slotCount, totalSlots: this.gameState.slotCount, turns: this.gameState.turn, hintUsed: false }, 3);
+                this.handleSolve();
             }, 1000);
             return true;
         }
@@ -5855,7 +5902,30 @@ class DetectiveMysteryGame {
         this.saveData();
 
         const levelData = currentLevelData;
+
+        // 檢查是否有下一階段
+        if (this.gameMode === 'story' && this.gameState.stages && this.gameState.currentStageIndex < this.gameState.stages.length - 1) {
+            const currentStage = this.gameState.stages[this.gameState.currentStageIndex];
+            const nextStage = this.gameState.stages[this.gameState.currentStageIndex + 1];
+            this.gameState.currentStageIndex++;
+
+            setTimeout(() => {
+                // 播放階段過度對話
+                const midDialogue = currentStage.closingDialogue || [
+                    { speaker: '夏洛特', text: '這只是開胃菜...真正的難題還在後頭。', portrait: 'portrait-iris' }
+                ];
+                this.dialogue.play(midDialogue, () => {
+                    const nextOpening = nextStage.openingDialogue || [
+                        { speaker: '你', text: '接下來的編碼更複雜了，我們必須加快速度。', portrait: 'portrait-client' }
+                    ];
+                    this.dialogue.play(nextOpening, () => this.startPattern(this.currentLevel));
+                });
+            }, 800);
+            return;
+        }
+
         let postStory = [];
+
         if (this.gameMode === 'daily') {
             postStory = [
                 {
@@ -5893,16 +5963,25 @@ class DetectiveMysteryGame {
         }
 
         setTimeout(() => {
+            const isLevel100 = this.gameMode === 'story' && this.currentLevel === 100;
+            if (isLevel100) {
+                this.nextHubPanel = 'daily';
+            } else {
+                this.nextHubPanel = 'home';
+            }
+
             const openResult = () => this.showResultModal({
                     success: true,
                     title: this.getResultTitle(stars),
-                    desc: this.gameMode === 'story'
-                        ? `${levelData ? levelData.client : '委託人'} 的案件已完成，事務所完成本次評級。`
-                        : this.gameMode === 'daily'
-                            ? this.gameState.weeklyRewardGranted
-                                ? '每日推理完成，10 英鎊與本週七日結算獎勵都已入帳。'
-                                : '每日推理完成，10 英鎊已入帳。'
-                            : '怪獸追跡本輪完成，得分與英鎊已入帳。',
+                    desc: isLevel100 
+                        ? '所有委託已暫時完成。感謝您的出色推理！點擊回到事務所即可進入每日任務區塊。'
+                        : (this.gameMode === 'story'
+                            ? `${levelData ? levelData.client : '委託人'} 的案件已完成，事務所完成本次評級。`
+                            : this.gameMode === 'daily'
+                                ? this.gameState.weeklyRewardGranted
+                                    ? '每日推理完成，10 英鎊與本週七日結算獎勵都已入帳。'
+                                    : '每日推理完成，10 英鎊已入帳。'
+                                : '怪獸追跡本輪完成，得分與英鎊已入帳。'),
                     story: levelData
                         ? `${this.gameMode === 'daily' ? '每日題目回顧' : '案件回顧'}｜${levelData.request}${this.gameState.weeklyRewardGranted ? '｜本週七日蓋章完成 +500' : ''}`
                         : '本輪密碼已記錄進追蹤檔案。',
