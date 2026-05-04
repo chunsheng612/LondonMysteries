@@ -937,6 +937,10 @@ body {
 .hub-content.home-screen .hub-utility-row {
     display: none;
 }
+/* Hide NPC portrait when active panel is not home */
+#view-hub .hub-content:not([data-active-panel="home"]) .hub-hero-container {
+    display: none;
+}
 .home-shell {
     width: min(100%, 360px);
     margin: 0 auto 24px;

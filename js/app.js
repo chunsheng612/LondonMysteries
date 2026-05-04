@@ -3530,6 +3530,11 @@ class DetectiveMysteryGame {
             this.els.btnGlobalBack.classList.toggle('hidden', target === 'home');
         }
 
+        const heroContainer = document.querySelector('.hub-hero-container');
+        if (heroContainer) {
+            heroContainer.classList.toggle('hidden', target !== 'home');
+        }
+
         if (target === 'shop') {
             this.renderShop();
         }
@@ -4029,23 +4034,23 @@ class DetectiveMysteryGame {
 
         if (this.els.storyProgressBadge) {
             this.els.storyProgressBadge.textContent = hasStoryLeft
-                ? `第 ${currentLevel.id} 關`
+                ? `進度：${currentLevel.id} / ${this.levels.length}`
                 : '主線已結案';
         }
 
         if (this.els.storyNextTitle) {
-            this.els.storyNextTitle.textContent = hasStoryLeft ? `${currentLevel.chapterTitle}` : '所有正式案件已完成';
+            this.els.storyNextTitle.textContent = hasStoryLeft ? `${currentLevel.chapterTitle}` : '所有案件已封存';
         }
 
         if (this.els.storyNextDesc) {
             this.els.storyNextDesc.textContent = hasStoryLeft
-                ? `第 ${currentLevel.chapterOrder} 件「${currentLevel.title}」`
-                : '可以重玩主線關卡，或專心衝刺每日推理與每週全勤獎勵。';
+                ? `案件：${currentLevel.title}`
+                : '感謝您的協助，倫敦暫時恢復了平靜。';
         }
 
         if (this.els.storyProgressText) {
             this.els.storyProgressText.textContent = hasStoryLeft
-                ? `${currentLevel.chapterTitle}｜第 ${currentLevel.chapterOrder} 件`
+                ? `${currentLevel.chapterTitle}｜案件 ${currentLevel.chapterOrder}`
                 : '所有正式案件已封存';
         }
 
